@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
 
 batch_size = 128
 test_size = 256
@@ -17,6 +16,16 @@ def unpickle(file):
     with open(file, 'rb') as fo:
         dict = pickle.load(fo, encoding='bytes')
     return dict
+
+def rgb(data):
+    red = []
+    green = []
+    blue = []
+    for image in data:
+        red.append(image[0:1024])
+        green.append(image[1024:2048])
+        blue.append(image[2048:3072])
+    return np.asarray(red), np.asarray(green), np.asarray(blue)
 
 def init_weights(shape):
     return tf.Variable(tf.random_normal(shape, stddev=0.01))
@@ -42,10 +51,20 @@ batch_2 = unpickle(batch_file_2)
 batch_3 = unpickle(batch_file_3)
 batch_4 = unpickle(batch_file_4)
 batch_5 = unpickle(batch_file_5)
-cifar = dict(batch_1.items() + batch_2.items() + batch_3.items() + batch_4.items() + batch_5.items())
-test = unpickle(test_file)
-# needs to be stores as a 32x32x3 input img (32x32 rgb)
-trX, trY, teX, teY = cifar.data, cifar.labels, test.data, test.labels
+data = np.concatenate((batch_1[b'data'],batch_2[b'data'],batch_3[b'data'],
+                       batch_4[b'data'],batch_5[b'data']), axis=0)
+labels = np.concatenate((batch_1[b'labels'],batch_2[b'labels'],batch_3[b'labels'],
+                         batch_4[b'labels'],batch_5[b'labels']), axis=0)
+
+red_data, green_data, blue_data = rgb(data)
+
+test_batch = unpickle(test_file)
+test_data = test_batch[b'data']
+red_test_data, green_test_data, blue_test_data = rgb(test_data)
+test_labels = test_batch[b'labels']
+
+trX, trY, teX, teY = red_data, labels, red_test_data, test_labels
+"""
 trX = trX.reshape(-1, 28, 28, 1)  # 28x28x1 input img
 teX = teX.reshape(-1, 28, 28, 1)  # 28x28x1 input img
 
@@ -80,7 +99,8 @@ with tf.Session() as sess:
         np.random.shuffle(test_indices)
         test_indices = test_indices[0:test_size]
 
-        print(i, np.mean(np.argmax(teY[test_indices], axis=1) ==
+        print("iterartion: ", i, "Accuracy: ", np.mean(np.argmax(teY[test_indices], axis=1) ==
                          sess.run(predict_op, feed_dict={X: teX[test_indices],
                                                          p_keep_conv: 1.0,
                                                          p_keep_hidden: 1.0})))
+"""
