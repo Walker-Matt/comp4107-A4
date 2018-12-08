@@ -1,34 +1,13 @@
 import tensorflow as tf
 import numpy as np
+from tensorflow.examples.tutorials.mnist import input_data
 
 batch_size = 128
 test_size = 256
 
-batch_file_1 = "data_batch_1"
-batch_file_2 = "data_batch_2"
-batch_file_3 = "data_batch_3"
-batch_file_4 = "data_batch_4"
-batch_file_5 = "data_batch_5"
-test_file = "test_batch"
-
-def unpickle(file):
-    import pickle
-    with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='bytes')
-    return dict
-
-def rgb(data):
-    red = []
-    green = []
-    blue = []
-    for image in data:
-        red.append(image[0:1024])
-        green.append(image[1024:2048])
-        blue.append(image[2048:3072])
-    return np.asarray(red), np.asarray(green), np.asarray(blue)
-
 def init_weights(shape):
     return tf.Variable(tf.random_normal(shape, stddev=0.01))
+
 
 def model(X, w, w_fc, w_o, p_keep_conv, p_keep_hidden):
     l1a = tf.nn.relu(tf.nn.conv2d(X, w,                       # l1a shape=(?, 28, 28, 32)
@@ -46,25 +25,8 @@ def model(X, w, w_fc, w_o, p_keep_conv, p_keep_hidden):
     pyx = tf.matmul(l4, w_o)
     return pyx
 
-batch_1 = unpickle(batch_file_1)
-batch_2 = unpickle(batch_file_2)
-batch_3 = unpickle(batch_file_3)
-batch_4 = unpickle(batch_file_4)
-batch_5 = unpickle(batch_file_5)
-data = np.concatenate((batch_1[b'data'],batch_2[b'data'],batch_3[b'data'],
-                       batch_4[b'data'],batch_5[b'data']), axis=0)
-labels = np.concatenate((batch_1[b'labels'],batch_2[b'labels'],batch_3[b'labels'],
-                         batch_4[b'labels'],batch_5[b'labels']), axis=0)
-
-red_data, green_data, blue_data = rgb(data)
-
-test_batch = unpickle(test_file)
-test_data = test_batch[b'data']
-red_test_data, green_test_data, blue_test_data = rgb(test_data)
-test_labels = test_batch[b'labels']
-
-trX, trY, teX, teY = red_data, labels, red_test_data, test_labels
-"""
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+trX, trY, teX, teY = mnist.train.images, mnist.train.labels, mnist.test.images, mnist.test.labels
 trX = trX.reshape(-1, 28, 28, 1)  # 28x28x1 input img
 teX = teX.reshape(-1, 28, 28, 1)  # 28x28x1 input img
 
@@ -87,7 +49,7 @@ predict_op = tf.argmax(py_x, 1)
 with tf.Session() as sess:
     # you need to initialize all variables
     tf.global_variables_initializer().run()
-
+    
     for i in range(100):
         training_batch = zip(range(0, len(trX), batch_size),
                              range(batch_size, len(trX)+1, batch_size))
@@ -99,8 +61,8 @@ with tf.Session() as sess:
         np.random.shuffle(test_indices)
         test_indices = test_indices[0:test_size]
 
-        print("iterartion: ", i, "Accuracy: ", np.mean(np.argmax(teY[test_indices], axis=1) ==
+        print(i, np.mean(np.argmax(teY[test_indices], axis=1) ==
                          sess.run(predict_op, feed_dict={X: teX[test_indices],
                                                          p_keep_conv: 1.0,
                                                          p_keep_hidden: 1.0})))
-"""
+    
